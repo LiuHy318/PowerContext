@@ -114,6 +114,10 @@ from powercontext.builtin.persistence.topic_memory_index import (
     TopicMemoryIndex,
 )
 from powercontext.builtin.runtime._scope_cache import ScopeCacheObserver
+from powercontext.builtin.runtime.source_lifecycle import (
+    SourceLifecycleApplication,
+    ensure_source_lifecycle_schema,
+)
 from powercontext.builtin.runtime.application import (
     BuiltinRuntime,
     RecallEffortSink,
@@ -665,6 +669,7 @@ async def open_builtin_runtime(
         if config.runtime.memory_rerank_enabled and configured_reranker is None:
             raise BuiltinConfigurationError("memory-reranker")
         _require_decision_backend(config.runtime, configured_decision)
+        runtime.lifecycle = SourceLifecycleApplication(runtime, contexts.database)
         yield runtime
 
 
@@ -902,6 +907,7 @@ async def open_builtin_contexts(
                 await ensure_topic_memory_tag_schema(connection)
                 await ensure_dream_schema(connection)
                 await ensure_scope_search_schema(connection)
+                await ensure_source_lifecycle_schema(connection)
                 # A Topic child reuses its parent's schema. It never reads or
                 # writes Memory/Experience projections; rebuilding their FTS
                 # indexes here would take the shared SQLite write lock once

@@ -99,6 +99,48 @@ LIMIT :candidate_limit
 """
 
 
+_OCEANBASE_NATIVE_HYBRID_FTS = """(SELECT 'fts' AS channel,
+            h.memory_artifact_id,
+            h.head_revision,
+            h.entry_id,
+            h.entry_version_id,
+            v.text AS text,
+            NULL AS distance
+     FROM pc_memory_entry_heads AS h
+     JOIN pc_memory_entry_versions AS v
+       ON v.scope_id = h.scope_id
+      AND v.memory_artifact_id = h.memory_artifact_id
+      AND v.entry_version_id = h.entry_version_id
+     WHERE h.scope_id = {scope_id}
+       AND h.memory_artifact_id IN ({artifact_ids})
+       AND MATCH(h.searchable_text) AGAINST ({query})
+     ORDER BY MATCH(h.searchable_text) AGAINST ({query}) DESC
+     LIMIT {limit})"""
+
+_OCEANBASE_NATIVE_HYBRID_VECTOR = """(SELECT 'vector' AS channel,
+            m.memory_artifact_id,
+            m.head_revision,
+            m.entry_id,
+            m.entry_version_id,
+            v.text AS text,
+            l2_distance(m.embedding, {query_vector}) AS distance
+     FROM pc_memory_vector_entries AS m
+     JOIN pc_memory_entry_versions AS v
+       ON v.scope_id = m.scope_id
+      AND v.memory_artifact_id = m.memory_artifact_id
+      AND v.entry_version_id = m.entry_version_id
+     WHERE m.scope_id = {scope_id}
+       AND m.memory_artifact_id IN ({artifact_ids})
+     ORDER BY l2_distance(m.embedding, {query_vector}) APPROXIMATE
+     LIMIT {limit})"""
+
+
+def _native_hybrid_literal(value: str) -> str:
+    """Quote one literal for the native hybrid statement."""
+
+    return "'" + value.replace("\\", "\\\\").replace("'", "''") + "'"
+
+
 class OceanBaseMemoryFTSIndex:
     """OceanBase FULLTEXT strategy over the relational active-head projection."""
 
@@ -393,6 +435,44 @@ class OceanBaseMemoryVectorIndex:
             )
         ).mappings()
         return MemorySearchChannels(vector=memory_channel_hits(rows, request.memories))
+
+    async def native_hybrid_search(
+        self,
+        connection: AsyncConnection,
+        scope_id: str,
+        request: MemorySearchRequest,
+        /,
+    ) -> MemorySearchChannels | None:
+        """Return both candidate channels from one native statement when supported."""
+
+        if request.mode != "hybrid" or request.tag_filter is not None:
+            return None
+        if request.embedding_profile != self.profile or request.query_vector is None:
+            return None
+        vector = validate_embedding(request.query_vector, dimension=self.profile.dimension)
+        statement = " UNION ALL ".join((
+            _OCEANBASE_NATIVE_HYBRID_FTS.format(
+                scope_id=_native_hybrid_literal(scope_id),
+                artifact_ids=", ".join(_native_hybrid_literal(memory.artifact_id) for memory in request.memories),
+                query=_native_hybrid_literal(request.analyzed_query),
+                limit=int(request.candidate_limit),
+            ),
+            _OCEANBASE_NATIVE_HYBRID_VECTOR.format(
+                scope_id=_native_hybrid_literal(scope_id),
+                artifact_ids=", ".join(_native_hybrid_literal(memory.artifact_id) for memory in request.memories),
+                query_vector=_native_hybrid_literal(
+                    "[" + ",".join(repr(float(value)) for value in vector) + "]"
+                ),
+                limit=int(request.candidate_limit),
+            ),
+        ))
+        rows = (await connection.exec_driver_sql(statement)).mappings().all()
+        fts_rows = [row for row in rows if row["channel"] == "fts"]
+        vector_rows = [row for row in rows if row["channel"] == "vector"]
+        return MemorySearchChannels(
+            fts=memory_channel_hits(fts_rows, request.memories),
+            vector=memory_channel_hits(vector_rows, request.memories),
+        )
 
     async def vector_complete(
         self,

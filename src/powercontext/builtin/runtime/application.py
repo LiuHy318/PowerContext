@@ -2667,6 +2667,7 @@ class ScopedTopicMemoryApplication:
                     query_embedding,
                     embedding_timeout_seconds,
                 )
+        result = await self._without_withdrawn_topics(result)
         observer = self._runtime._topic_memory_search_observer
         if observer is not None:
             try:
@@ -2684,6 +2685,20 @@ class ScopedTopicMemoryApplication:
                     },
                 )
         return result
+
+    async def _without_withdrawn_topics(self, result: TopicMemorySearchResult) -> TopicMemorySearchResult:
+        """Drop topics whose registered sources no longer support them."""
+
+        lifecycle = getattr(self._runtime, "lifecycle", None)
+        if lifecycle is None or not result.hits:
+            return result
+        kept = []
+        for hit in result.hits:
+            if await lifecycle.topic_available(self.scope_id, hit.artifact_ref.artifact_id):
+                kept.append(hit)
+        if len(kept) == len(result.hits):
+            return result
+        return result.model_copy(update={"hits": tuple(kept)})
 
     async def _search_with_embedding(
         self,
