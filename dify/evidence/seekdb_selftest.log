@@ -1,0 +1,17 @@
+[09/Nov/2026 12:19:03] "POST /memory/reset HTTP/1.1" 200 -
+[09/Nov/2026 12:19:03] "GET /health HTTP/1.1" 200 -
+[09/Nov/2026 12:19:03] "POST /memory/recall HTTP/1.1" 200 -
+[09/Nov/2026 12:19:03] "POST /memory/append HTTP/1.1" 200 -
+[09/Nov/2026 12:19:03] "POST /memory/append HTTP/1.1" 200 -
+[09/Nov/2026 12:19:03] "POST /memory/recall HTTP/1.1" 200 -
+[09/Nov/2026 12:19:03] "GET /memory/search?player=%E9%98%BF%E7%BD%97&q=%E7%83%AD%E8%8C%B6 HTTP/1.1" 200 -
+[seekdb] 已拉起嵌入式实例: /Users/cjf/上课学习/研究生/研1上/数据库前沿技术/seekdb_task/deliverables/dify/memory_service/.selftest.db
+[seekdb] schema 已就绪（inn_player / inn_memory）
+  [PASS] seekdb 连通  5.7.25-OceanBase seekdb-v1.4.0.0
+  [PASS] 新玩家召回为空记忆  这位客官是头一回进店，你还不认识他。
+  [PASS] 跨请求召回 2 轮记忆
+  [PASS] 情绪分按用词下降  mood=-1 alias=爱挑刺的
+  [PASS] 记忆摘要含最近往来  这位客官已来店 2 次，你私下管他叫「爱挑刺的」。他之前让你有点不痛快，你话里会带一点记账式的抱怨。最近的往来：第1次他...
+  [PASS] 关键词检索命中历史  1 条
+
+自检结果：全部通过

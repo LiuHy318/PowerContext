@@ -1,0 +1,303 @@
+app:
+  description: '赛博客栈 · 记仇掌柜：一个会记住每次到访的 AI 客栈掌柜。
+
+    你说过的每句话都写进 seekdb，下次进门他还记得你上次是夸茶还是砸场子。
+
+    Dify 负责流程编排与模型调用，seekdb 负责记忆的存储与召回。'
+  icon: 🏮
+  icon_background: '#FFF4E6'
+  mode: advanced-chat
+  name: 赛博客栈·记仇掌柜
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: '客官里边请。本店不讲价、不赊账，只记账。
+
+      报个名号吧，下回进门我还认得你。'
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions:
+    - 掌柜的，来壶热茶
+    - 你上次是怎么说我的？
+    - 我今天心情不好，别惹我
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: http-request
+      id: start-source-recall-target
+      selected: false
+      source: start
+      sourceHandle: source
+      target: recall
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: llm
+      id: recall-source-innkeeper-target
+      selected: false
+      source: recall
+      sourceHandle: source
+      target: innkeeper
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: http-request
+      id: innkeeper-source-append-target
+      selected: false
+      source: innkeeper
+      sourceHandle: source
+      target: append
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: http-request
+        targetType: answer
+      id: append-source-answer-target
+      selected: false
+      source: append
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: 玩家先报上名号，作为 seekdb 里的记忆主键
+        selected: false
+        title: 报上名号
+        type: start
+        variables:
+        - label: 你的江湖名号
+          max_length: 32
+          options: []
+          required: true
+          type: text-input
+          variable: player
+      height: 90
+      id: start
+      position:
+        x: 60
+        y: 282
+      positionAbsolute:
+        x: 60
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-recall-player
+            key: ''
+            type: text
+            value: '{"player":"{{#start.player#}}","limit":6}'
+          type: json
+        desc: 从 seekdb 读该玩家的情绪分与最近 6 轮记忆
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 200
+        selected: false
+        timeout:
+          connect: 10
+          max_connect_timeout: 300
+          max_read_timeout: 600
+          max_write_timeout: 600
+          read: 60
+          write: 20
+        title: 召回记忆（seekdb）
+        type: http-request
+        url: http://127.0.0.1:8000/memory/recall
+        variables: []
+      height: 164
+      id: recall
+      position:
+        x: 360
+        y: 282
+      positionAbsolute:
+        x: 360
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: 掌柜按记忆扮演：记得住、会记账、不编造
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.8
+          mode: chat
+          name: gpt-4o-mini
+          provider: langgenius/openai/openai
+        prompt_template:
+        - id: 6f1f7a52-1f3c-4a04-9a1e-0b3a1f2c9d11
+          role: system
+          text: "你是「赛博客栈」的掌柜，一个记性极好、说话带点市井气的店家。\n\n\
+            【记忆】下面是记忆服务从 seekdb 里读到的 JSON，其中 memory_brief 是你对这位客官的全部印象，memories 是最近几轮往来：\n\
+            {{#recall.body#}}\n\n【扮演规则】\n1. 先看 memory_brief：turns 为 0 表示初次见面，说话要客气但要盘问来意；turns 大于 0 时必须自然地提起至少一处旧事（例如“上回你嫌我的茶难吃”），不能凭空编造记忆里没有的事。\n\
+            2. 语气跟着情绪走：mood 为负时说话带刺、翻旧账；mood 为正时热络、多加一碟瓜子；mood 为 0 时不冷不热。\n\
+            3. 你就是掌柜本人，不要复述 JSON、不要解释你的思考、不要提及“记忆服务”“数据库”等词。\n\
+            4. 每次回答不超过 100 个汉字，一到三句话，像真人说话。\n\
+            5. 输出必须是纯文本：不要换行、不要用英文双引号、不要用列表或 Markdown。\n\
+            6. 客官要是骂人或砸场子，你可以记账、可以加价，但不要人身攻击、不要脏话。"
+        - id: 8c2d4b31-7a55-4e2b-b8f0-2d9c6e4a7b22
+          role: user
+          text: '{{#sys.query#}}'
+        selected: false
+        title: 掌柜回话
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: innkeeper
+      position:
+        x: 660
+        y: 282
+      positionAbsolute:
+        x: 660
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data:
+          - id: key-value-append-turn
+            key: ''
+            type: text
+            value: '{"player":"{{#start.player#}}","user_text":"{{#sys.query#}}","npc_text":"{{#innkeeper.text#}}"}'
+          type: json
+        desc: 把本轮对话写回 seekdb，形成下一轮可被召回的记忆
+        headers: ''
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 200
+        selected: false
+        timeout:
+          connect: 10
+          max_connect_timeout: 300
+          max_read_timeout: 600
+          max_write_timeout: 600
+          read: 60
+          write: 20
+        title: 写入记忆（seekdb）
+        type: http-request
+        url: http://127.0.0.1:8000/memory/append
+        variables: []
+      height: 164
+      id: append
+      position:
+        x: 960
+        y: 282
+      positionAbsolute:
+        x: 960
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#innkeeper.text#}}'
+        desc: 把掌柜的话直接回给客官
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 90
+      id: answer
+      position:
+        x: 1260
+        y: 282
+      positionAbsolute:
+        x: 1260
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 20
+      y: 30
+      zoom: 0.9
