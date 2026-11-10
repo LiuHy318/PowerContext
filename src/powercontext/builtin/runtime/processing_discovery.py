@@ -26,6 +26,30 @@ from powercontext.builtin.persistence.supervision import ArtifactProcessingFence
 from powercontext.builtin.persistence.tables import PROFILE_POLICIES_TABLE, SOURCE_JOURNAL_HEADS_TABLE
 
 
+async def source_count_scopes(
+    connection: AsyncConnection,
+    scope_ids: tuple[str, ...],
+    *,
+    binding_name: str,
+    threshold: int,
+) -> frozenset[str]:
+    """Count persisted journal identities after each family's successful cursor.
+
+    Journal positions are contiguous per scope. No Source payload, generation
+    evidence filtering, capture-call count, or dirty generation is used here.
+    """
+    if not scope_ids:
+        return frozenset()
+    heads = SOURCE_JOURNAL_HEADS_TABLE
+    rows = await connection.execute(select(heads.c.scope_id, heads.c.position).where(heads.c.scope_id.in_(scope_ids)))
+    cursors = await SourceCursorRepository().load_many(connection, scope_ids, binding_name)
+    return frozenset(
+        scope
+        for scope, high in rows
+        if int(high) - (cursors[scope].cursor.sequence if scope in cursors else 0) >= threshold
+    )
+
+
 async def enabled_profile_scopes(connection: AsyncConnection, scope_ids: tuple[str, ...]) -> frozenset[str]:
     """Qualify one bounded automatic page before accepting any invocation.
 

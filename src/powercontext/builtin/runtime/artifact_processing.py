@@ -117,6 +117,7 @@ class ArtifactProcessingBinding:
     # Only automatic admission is filtered; already accepted requests retain
     # their own Worker authorization and domain completion semantics.
     automatic_scope_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
+    source_count_scope_filter: Callable[[AsyncConnection, tuple[str, ...]], Awaitable[frozenset[str]]] | None = None
 
     def __post_init__(self) -> None:
         if not self.binding_name or self.binding_name != self.binding_name.strip():
@@ -401,7 +402,9 @@ class _FamilyState:
     discovery_pending: bool = True
     next_schedule_at: float | None = None
     next_discovery_at: float = 0.0
-    automatic_next: bool = False
+    discovery_rotation: int = 0
+    count_after: int = 0
+    next_count_at: float = 0.0
     overflow_not_before: float = 0.0
     degraded: bool = False
     completed: int = 0
@@ -585,6 +588,8 @@ class ArtifactProcessingSupervisor:
             state.discovery_pending = True
             state.reconcile_complete = False
             state.reconcile_after = None
+            state.count_after = 0
+            state.next_count_at = 0.0
         if self._lease_mode == "oceanbase":
             self._renew_task = asyncio.create_task(self._renew(), name=f"artifact-lease-{self._supervisor_group}")
 
@@ -648,14 +653,55 @@ class ArtifactProcessingSupervisor:
                 state.next_discovery_at = loop.time() + _DISCOVERY_PAGE_DELAY_SECONDS
         else:
             state.reconcile_complete = True
-        # Alternate discovery channels so explicit traffic cannot monopolize admission.
-        state.automatic_next = not state.automatic_next
-        if state.automatic_next:
-            await self._discover_automatic(state)
-            await self._discover_requested(state)
-        else:
-            await self._discover_requested(state)
-            await self._discover_automatic(state)
+        # Rotate discovery channels so no trigger can monopolize admission.
+        channels = [self._discover_automatic, self._discover_requested]
+        if binding.source_count_scope_filter is not None:
+            channels.append(self._discover_count)
+        ordered = channels[state.discovery_rotation :] + channels[: state.discovery_rotation]
+        state.discovery_rotation = (state.discovery_rotation + 1) % len(channels)
+        for discover in ordered:
+            await discover(state)
+
+    async def _discover_count(self, state: _FamilyState) -> None:
+        """Accept a bounded page of count-qualified work independently of timers.
+
+        Once requested, an invocation follows ordinary durable recovery and
+        retry paths. Admission does not change a domain cursor or timer epoch.
+        """
+        qualify = state.binding.source_count_scope_filter
+        capacity = min(self._fresh_capacity(state), _DISCOVERY_PAGE_SIZE)
+        now = asyncio.get_running_loop().time()
+        if qualify is None or capacity <= 0 or now < state.next_count_at:
+            return
+        admitted = []
+        async with self._database.transaction() as connection:
+            await self._leases.require_fence(connection, self._require_current_fence())
+            rows = await self._intents.scan(
+                connection,
+                state.binding.binding_name,
+                after_sequence=state.count_after,
+                limit=capacity,
+                dirty_only=True,
+            )
+            candidates = tuple(
+                row.scope_id
+                for row in rows
+                if row.scope_id not in state.queued
+                and row.scope_id not in state.running
+                and row.scope_id not in state.retries
+                and row.requested_generation == row.handled_generation
+            )
+            eligible = await qualify(connection, candidates)
+            for row in rows:
+                if row.scope_id in eligible:
+                    await self._intents.request(connection, row.scope_id, state.binding.binding_name)
+                    admitted.append(row.scope_id)
+        # Publish page progress only after the admission transaction commits.
+        more = len(rows) == capacity
+        state.count_after = rows[-1].pending_sequence if more else 0
+        state.next_count_at = now + (_DISCOVERY_PAGE_DELAY_SECONDS if more else self._tick)
+        for scope in admitted:
+            self._enqueue(state, scope)
 
     async def _discover_requested(self, state: _FamilyState) -> None:
         capacity = self._fresh_capacity(state)
@@ -1093,6 +1139,8 @@ class ArtifactProcessingSupervisor:
                 continue
             if state.next_schedule_at is not None:
                 deadlines.append(state.next_schedule_at)
+            if state.binding.source_count_scope_filter is not None and self._fresh_capacity(state) > 0:
+                deadlines.append(max(state.next_count_at, state.next_discovery_at))
             if state.discovery_pending or state.scan_in_progress or not state.reconcile_complete or state.degraded:
                 deadlines.append(max(now, state.next_discovery_at))
         return None if not deadlines else max(0.001, min(deadlines) - now)

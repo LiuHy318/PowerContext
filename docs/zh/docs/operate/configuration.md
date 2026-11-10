@@ -415,6 +415,27 @@ Vector search 需要全部三个 embedding identity 变量：model、稳定 prof
 打开数据库时会探测它，已安装的 library 与 platform 或 SQLite build 不兼容时启动会失败。没有 embedding profile 时，
 full-text search 仍可用。配置和 capability 验证步骤见[配置向量检索](../workflows/configure-vector-search.md)。
 
+## 按 Source 数量触发处理
+
+通过 `RuntimeConfig` 可设置 `memory_source_count_threshold` 和
+`topic_memory_source_count_threshold`。两项默认均为 `None`，表示关闭数量触发；非空值必须是严格正整数，
+不接受布尔值、字符串、浮点数、零或负数。例如：
+
+```python
+from powercontext.builtin.runtime.config import RuntimeConfig
+
+settings = RuntimeConfig(memory_source_count_threshold=3, topic_memory_source_count_threshold=5)
+```
+
+每个 scope、每个处理族独立计算：从各自最近成功提交的 cursor 之后，统计已持久化的唯一 Source journal
+条目。重复采集和 receipt 升级不增加条目；只用于 lineage 的条目也参与计数，但仍不作为生成证据。
+数量条件与时间条件任一满足即可触发，显式 flush 可直接绕过数量门槛。
+
+窗口上限仍控制每次读取规模。Memory 门槛为 3、窗口为 1 时，新增 3 条只自动处理 1 条，剩余 2 条等待
+新条目、定时条件或显式 flush。Topic Memory 已接受的波次按原窗口完成有限目标，不对后续窗口重复检查门槛。
+已接受的请求持久化后可在重启时恢复，失败重试无需重新达到门槛，失败不会推进成功 cursor；未达到门槛的
+待处理条目也会在重启后保留。
+
 ## CLI Server 连接
 
 | 变量 | 默认值 | 含义 |

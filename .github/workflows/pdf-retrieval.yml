@@ -32,3 +32,8 @@ jobs:
           PYTHONPATH: src:competition
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: python -m pytest -q -s -c competition/pytest.ini --confcutdir=competition competition/challenges/context-02-incremental-pack/acceptance
+      - name: Source count trigger public acceptance
+        env:
+          PYTHONPATH: src:competition
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: python -m pytest -q -s -c competition/pytest.ini --confcutdir=competition competition/challenges/processing-01-count-trigger/acceptance
