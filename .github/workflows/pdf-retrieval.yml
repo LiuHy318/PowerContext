@@ -1,4 +1,4 @@
-name: PDF retrieval acceptance
+name: PDF and HTTP reranking acceptance
 on:
   push:
     branches: [feature/all-solutions]
@@ -22,3 +22,8 @@ jobs:
           PYTHONPATH: src:competition
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: python -m pytest -q -s -c competition/pytest.ini --confcutdir=competition competition/challenges/source-03-pdf-retrieval/acceptance
+      - name: HTTP reranking public acceptance
+        env:
+          PYTHONPATH: src:competition
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: python -m pytest -q -s -c competition/pytest.ini --confcutdir=competition competition/challenges/retrieval-01-reranking/acceptance
