@@ -1,4 +1,4 @@
-name: PDF and HTTP reranking acceptance
+name: Context and retrieval acceptance
 on:
   push:
     branches: [feature/all-solutions]
@@ -27,3 +27,8 @@ jobs:
           PYTHONPATH: src:competition
           PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
         run: python -m pytest -q -s -c competition/pytest.ini --confcutdir=competition competition/challenges/retrieval-01-reranking/acceptance
+      - name: Incremental context public acceptance
+        env:
+          PYTHONPATH: src:competition
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: python -m pytest -q -s -c competition/pytest.ini --confcutdir=competition competition/challenges/context-02-incremental-pack/acceptance
