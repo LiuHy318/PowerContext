@@ -140,7 +140,11 @@ from powercontext.builtin.runtime.decision_model import (
 from powercontext.builtin.runtime.family_processing import FAMILY_BINDINGS, FamilyWorkerSpec, run_family_worker
 from powercontext.builtin.runtime.memory_write_gate import build_memory_write_gate
 from powercontext.builtin.runtime.models import MemorySearchMode, RuntimeCapabilities
-from powercontext.builtin.runtime.processing_discovery import SourceProcessingPendingProvider, enabled_profile_scopes
+from powercontext.builtin.runtime.processing_discovery import (
+    SourceProcessingPendingProvider,
+    enabled_profile_scopes,
+    source_count_scopes,
+)
 from powercontext.builtin.runtime.processing_registry import (
     canonical_processing_manifest,
     dream_operations,
@@ -156,6 +160,10 @@ from powercontext.builtin.runtime.readiness import (
 )
 from powercontext.builtin.runtime.recall_sufficiency import RecallSufficiencyPolicy
 from powercontext.builtin.runtime.relational import RelationalContexts
+from powercontext.builtin.runtime.source_lifecycle import (
+    SourceLifecycleApplication,
+    ensure_source_lifecycle_schema,
+)
 from powercontext.builtin.runtime.topic_memory_processing import (
     TopicMemoryWorkerSpec,
     run_topic_memory_worker,
@@ -665,6 +673,7 @@ async def open_builtin_runtime(
         if config.runtime.memory_rerank_enabled and configured_reranker is None:
             raise BuiltinConfigurationError("memory-reranker")
         _require_decision_backend(config.runtime, configured_decision)
+        runtime.lifecycle = SourceLifecycleApplication(runtime, contexts.database)
         yield runtime
 
 
@@ -720,7 +729,8 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
         "skill": None,
     }
     for family, schedule in automatic.items():
-        if schedule is not None and family not in declared | registered:
+        threshold = getattr(config.runtime, f"{family.replace('-', '_')}_source_count_threshold", None)
+        if (schedule is not None or threshold is not None) and family not in declared | registered:
             if (
                 family == "topic-memory"
                 and config.runtime.artifact_processing_families is None
@@ -787,6 +797,13 @@ def _artifact_processing_bindings(  # noqa: C901 - validate and assemble one reg
                 if family == "skill"
                 else SourceProcessingPendingProvider(contexts.database, binding, family),
                 automatic_scope_filter=enabled_profile_scopes if family == "profile" else None,
+                source_count_scope_filter=partial(
+                    source_count_scopes,
+                    binding_name=binding,
+                    threshold=getattr(config.runtime, f"{prefix}_source_count_threshold"),
+                )
+                if getattr(config.runtime, f"{prefix}_source_count_threshold", None) is not None
+                else None,
             )
         )
     _validate_processing_registrations(configured)
@@ -902,6 +919,7 @@ async def open_builtin_contexts(
                 await ensure_topic_memory_tag_schema(connection)
                 await ensure_dream_schema(connection)
                 await ensure_scope_search_schema(connection)
+                await ensure_source_lifecycle_schema(connection)
                 # A Topic child reuses its parent's schema. It never reads or
                 # writes Memory/Experience projections; rebuilding their FTS
                 # indexes here would take the shared SQLite write lock once

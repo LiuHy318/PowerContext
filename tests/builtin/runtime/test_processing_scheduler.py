@@ -18,8 +18,10 @@ import asyncio
 import logging
 from collections import Counter
 from datetime import timedelta
+from functools import partial
 
 import pytest
+from sqlalchemy import insert, update
 
 from powercontext.builtin.persistence.errors import ArtifactProcessingLeadershipLostError
 from powercontext.builtin.persistence.processing_intents import ArtifactProcessingIntentRepository
@@ -28,13 +30,14 @@ from powercontext.builtin.persistence.supervision import (
     ArtifactProcessingBindingStateRepository,
     ArtifactProcessingLeaseRepository,
 )
-from powercontext.builtin.persistence.tables import SHARED_TABLES
+from powercontext.builtin.persistence.tables import SHARED_TABLES, SOURCE_JOURNAL_HEADS_TABLE
 from powercontext.builtin.runtime import artifact_processing as processing
 from powercontext.builtin.runtime.artifact_processing import ArtifactProcessingBinding, ArtifactProcessingSupervisor
 from powercontext.builtin.runtime.processing_contracts import (
     ArtifactProcessingWorkerCompletion,
     ArtifactProcessingWorkerOutcome,
 )
+from powercontext.builtin.runtime.processing_discovery import source_count_scopes
 
 
 async def _wait(predicate, timeout_seconds=5):
@@ -155,6 +158,52 @@ def _profile(tmp_path, name):
     return SQLiteProfile.open(
         SQLiteConfig(url=f"sqlite+aiosqlite:///{tmp_path / (name + '.db')}"), tables=SHARED_TABLES
     )
+
+
+def test_count_admission_reaches_qualified_tail_and_revisits_below_threshold_scopes(tmp_path, monkeypatch):
+    monkeypatch.setattr(processing, "_DISCOVERY_PAGE_SIZE", 2)
+
+    async def scenario():
+        async with _profile(tmp_path, "count-pages") as profile:
+            scopes = [f"scope-{number}" for number in range(9)]
+            for scope in scopes:
+                await _request(profile.database, "memory-binding", scope, requested=False)
+            async with profile.database.transaction() as connection:
+                await connection.execute(
+                    insert(SOURCE_JOURNAL_HEADS_TABLE),
+                    [{"scope_id": scope, "position": 3 if scope == scopes[-1] else 1} for scope in scopes],
+                )
+            launcher = _Launcher(profile.database)
+            async with ArtifactProcessingSupervisor(
+                database=profile.database,
+                bindings=(
+                    ArtifactProcessingBinding(
+                        "memory-binding",
+                        "memory",
+                        launcher,
+                        source_count_scope_filter=partial(
+                            source_count_scopes, binding_name="memory-binding", threshold=3
+                        ),
+                    ),
+                ),
+                lease_mode="single-process",
+                oceanbase_tick_seconds=0.05,
+            ) as supervisor:
+                await _wait(lambda: supervisor.family_status["memory"]["completed"] == 1)
+                assert [work.scope_id for work in launcher.assignments] == [scopes[-1]]
+                async with profile.database.transaction() as connection:
+                    await connection.execute(
+                        update(SOURCE_JOURNAL_HEADS_TABLE)
+                        .where(SOURCE_JOURNAL_HEADS_TABLE.c.scope_id == scopes[0])
+                        .values(position=3)
+                    )
+                # Polling also discovers journal writes without an in-process wake.
+                await _wait(lambda: supervisor.family_status["memory"]["completed"] == 2)
+                assert [work.scope_id for work in launcher.assignments] == [scopes[-1], scopes[0]]
+                for scope in scopes[1:-1]:
+                    assert (await _intent(profile.database, "memory-binding", scope)).requested_generation == 0
+
+    asyncio.run(scenario())
 
 
 def test_each_family_has_independent_capacity_and_a_scope_is_single_flight(tmp_path):
