@@ -1,0 +1,19 @@
+{
+  "stage": "init",
+  "database": "mm_sdd",
+  "table": "mm_doc",
+  "server": {
+    "server_version": "5.7.25-OceanBase seekdb-v1.4.0.0",
+    "version_comment": "OceanBase 4.3.5.3 seekdb (r1.4.0.0) (Built 1-5bce9e06d1281347ad61344e4b01fab9158c58a2 Oct 27 2026)"
+  },
+  "chunks": {
+    "spec": 17,
+    "code": 25,
+    "test": 35
+  },
+  "total_chunks": 77,
+  "spec_digest": "5e76fd887d7dd4187717c6ece09021471881d2753f72aea993bf103dc06175cc",
+  "spec_digest_before": null,
+  "spec_changed": false,
+  "ddl_sha256": "5429cb5afaf88b34a98fd06188663f4665a58e6217f05a7e6cb59d835c091b42"
+}

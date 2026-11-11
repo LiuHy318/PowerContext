@@ -1,103 +1,110 @@
-"""上下文模块的单元测试。"""
+"""ctxsdd 自身的最小单元测试（不依赖 OceanBase / MiniMax / 网络）。
+
+端到端链路由 ``scripts/e2e_flow.sh`` 覆盖；这里只锁定解析、规范化、补丁应用这类
+容易被改坏的纯函数行为。
+"""
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
 
-from ctxsdd import patch as patch_tool
-from ctxsdd.chunker import collect_chunks, chunk_spec
-from ctxsdd.config import Config, load_config
-from ctxsdd.state import _fold, append_event, load_state
+from ctxsdd.chunker import chunk_python, chunk_spec
+from ctxsdd.patch import PatchError, apply_patch, extract_diff, modified_paths, normalize_diff
 
 
-@pytest.fixture()
-def config(tmp_path: Path) -> Config:
-    cfg = load_config()
-    object.__setattr__(cfg, "record_dir", tmp_path / "records")
-    return cfg
+def test_chunk_spec_splits_by_second_level_heading(tmp_path: Path) -> None:
+    spec = tmp_path / "SPEC-999-demo.md"
+    spec.write_text(
+        "# SPEC-999 demo\n\nintro\n\n## 1. alpha\n\nA\n\n## 2. beta\n\nB\n",
+        encoding="utf-8",
+    )
+    chunks = chunk_spec(spec, tmp_path)
+    assert [chunk.doc_id for chunk in chunks] == [
+        "spec:SPEC-999-demo.md#0",
+        "spec:SPEC-999-demo.md#1",
+        "spec:SPEC-999-demo.md#2",
+    ]
+    assert chunks[1].heading == "1. alpha"
+    assert (chunks[1].line_from, chunks[1].line_to) == (5, 8)
 
 
-def test_normalize_diff_fixes_hunk_counts() -> None:
-    raw = """--- a/test.py
-+++ b/test.py
-@@ -1,3 +1,4 @@
- line1
--line2
-+line2_new
- line3
-+line4
-"""
-    normalized = patch_tool.normalize_diff(raw)
-    assert "@@ -1,3 +1,4 @@" in normalized or "@@ -1,3 +1,4 @@" in normalized
+def test_chunk_python_uses_dotted_symbols_and_exact_lines(tmp_path: Path) -> None:
+    module = tmp_path / "mod.py"
+    module.write_text(
+        '"""doc."""\n'
+        "\n"
+        "def top(a):\n"
+        "    return a\n"
+        "\n"
+        "\n"
+        "class Box:\n"
+        "    def put(self, value):\n"
+        "        return value\n",
+        encoding="utf-8",
+    )
+    chunks = chunk_python(module, tmp_path, kind="code")
+    symbols = [chunk.symbol for chunk in chunks]
+    assert "top" in symbols
+    assert "Box" in symbols
+    assert "Box.put" in symbols
+    put = next(chunk for chunk in chunks if chunk.symbol == "Box.put")
+    assert (put.line_from, put.line_to) == (8, 9)
+
+
+def test_normalize_diff_recomputes_hunk_counts() -> None:
+    diff = (
+        "--- a/x.py\n"
+        "+++ b/x.py\n"
+        "@@ -1,3 +1,99 @@\n"
+        " keep\n"
+        "-old\n"
+        "+new\n"
+    )
+    normalized = normalize_diff(diff)
+    assert "@@ -1,2 +1,2 @@" in normalized
 
 
 def test_extract_diff_from_fenced_block() -> None:
-    text = """Here is the patch:
-```diff
---- a/test.py
-+++ b/test.py
-@@ -1 +1 @@
--old
-+new
-```
-Done."""
-    diff = patch_tool.extract_diff(text)
-    assert "--- a/test.py" in diff
-    assert "+++ b/test.py" in diff
+    text = "here you go:\n```diff\n--- a/x.py\n+++ b/x.py\n@@ -1,1 +1,1 @@\n-a\n+b\n```\nthanks"
+    diff = extract_diff(text)
+    assert diff.startswith("--- a/x.py")
+    assert "+b" in diff
 
 
-def test_extract_diff_requires_add_and_remove() -> None:
-    with pytest.raises(patch_tool.PatchError):
-        patch_tool.extract_diff("```diff\n--- a/test.py\n+++ b/test.py\n@@ -1 +1 @@\n+only added\n```")
+def test_extract_diff_rejects_patch_without_changes() -> None:
+    with pytest.raises(PatchError):
+        extract_diff("```diff\n--- a/x.py\n+++ b/x.py\n@@ -1,1 +1,1 @@\n same\n```")
 
 
-def test_modified_paths_strips_prefix() -> None:
-    diff = """--- a/business/reading_list/service.py
-+++ b/business/reading_list/service.py
-@@ -1,2 +1,2 @@
-"""
-    assert patch_tool.modified_paths(diff) == ["business/reading_list/service.py"]
+def test_modified_paths_strips_ab_prefix() -> None:
+    diff = "--- a/business/x.py\n+++ b/business/x.py\n@@ -1,1 +1,1 @@\n-a\n+b\n"
+    assert modified_paths(diff) == ["business/x.py"]
 
 
-def test_diff_sha_is_stable() -> None:
-    assert patch_tool.diff_sha("abc") == patch_tool.diff_sha("abc")
+def test_apply_patch_applies_single_hunk(tmp_path: Path) -> None:
+    target = tmp_path / "business" / "x.py"
+    target.parent.mkdir(parents=True)
+    target.write_text("line1\nline2\nline3\n", encoding="utf-8")
+    diff = (
+        "--- a/business/x.py\n"
+        "+++ b/business/x.py\n"
+        "@@ -1,3 +1,3 @@\n"
+        " line1\n"
+        "-line2\n"
+        "+line2-changed\n"
+        " line3\n"
+    )
+    result = apply_patch(tmp_path, diff)
+    assert result.ok, result.stderr
+    assert target.read_text(encoding="utf-8") == "line1\nline2-changed\nline3\n"
 
 
-def test_collect_chunks_finds_specs_and_code() -> None:
-    root = Path(__file__).resolve().parent.parent
-    chunks = collect_chunks(root)
-    kinds = {c.kind for c in chunks}
-    assert "spec" in kinds
-    assert "code" in kinds
-    assert "test" in kinds
-    for c in chunks:
-        assert c.line_from > 0
-        assert c.line_to >= c.line_from
-        assert c.path
-
-
-def test_state_fold_progress(config: Config) -> None:
-    append_event(config, {"event": "task_started", "task_id": "TASK-001"})
-    append_event(config, {"event": "context_built", "task_id": "TASK-001",
-                          "spec_digest": "abc", "context_digest": "def"})
-    append_event(config, {"event": "patch_generated", "task_id": "TASK-001",
-                          "patch_sha": "xyz", "attempt": 1})
-    append_event(config, {"event": "patch_applied", "task_id": "TASK-001", "patch_sha": "xyz"})
-    append_event(config, {"event": "verified", "task_id": "TASK-001", "ok": True})
-    state = load_state(config)
-    progress = state["progress"]
-    assert progress["started"] is True
-    assert progress["context_built"] is True
-    assert progress["patch_applied"] is True
-    assert progress["verified"] is True
-    assert progress["attempts"] == 1
-    assert progress["patch_sha"] == "xyz"
-
-
-def test_state_isolated_between_scopes(config: Config) -> None:
-    append_event(config, {"event": "task_started", "task_id": "TASK-001"})
-    state = load_state(config)
-    assert len(state["progress"]["history"]) >= 1
+def test_apply_patch_preserves_trailing_newline_and_reports_missing_context(tmp_path: Path) -> None:
+    target = tmp_path / "y.py"
+    target.write_text("a\nb\n", encoding="utf-8")
+    bad = "--- a/y.py\n+++ b/y.py\n@@ -1,2 +1,2 @@\n-nope\n+yes\n b\n"
+    result = apply_patch(tmp_path, bad)
+    assert not result.ok
+    assert "hunk context not found" in result.stderr

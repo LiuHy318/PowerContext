@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def load_dotenv(path: Path) -> None:
-    """极简 .env 解析：KEY=VALUE，已存在的环境变量优先。"""
+    """极简 .env 解析：``KEY=VALUE``，已存在的环境变量优先。"""
     if not path.is_file():
         return
     for raw in path.read_text(encoding="utf-8").splitlines():
@@ -18,7 +18,9 @@ def load_dotenv(path: Path) -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, value = line.partition("=")
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
 
 
 def _env(name: str, default: str) -> str:
@@ -27,8 +29,9 @@ def _env(name: str, default: str) -> str:
 
 
 def _env_int(name: str, default: int) -> int:
+    raw = _env(name, str(default))
     try:
-        return int(_env(name, str(default)))
+        return int(raw)
     except ValueError:
         return default
 
@@ -36,17 +39,21 @@ def _env_int(name: str, default: int) -> int:
 @dataclass(frozen=True)
 class Config:
     root: Path = ROOT
+    # OceanBase / seekdb
     ob_host: str = "127.0.0.1"
     ob_port: int = 2881
     ob_user: str = "root@sys"
     ob_password: str = ""
     ob_database: str = "mm_sdd"
+    # MiniMax
     minimax_base_url: str = "https://api.minimax.chat/v1/chat/completions"
     minimax_api_key: str = ""
     minimax_model: str = "MiniMax-M3.1-Flash"
     minimax_max_tokens: int = 8192
     minimax_timeout: int = 300
+    # PowerContext
     pc_scope_id: str = "mm-sdd-task-001"
+    # 流程
     task_id: str = "TASK-001"
     record_dir: Path = field(default=ROOT / "records")
 
@@ -57,6 +64,10 @@ class Config:
     @property
     def business_dir(self) -> Path:
         return self.root / "business"
+
+    @property
+    def tests_dir(self) -> Path:
+        return self.root / "business" / "tests"
 
     @property
     def tasks_dir(self) -> Path:
@@ -82,6 +93,7 @@ class Config:
 def load_config() -> Config:
     load_dotenv(ROOT / ".env")
     return Config(
+        root=ROOT,
         ob_host=_env("MM_OB_HOST", "127.0.0.1"),
         ob_port=_env_int("MM_OB_PORT", 2881),
         ob_user=_env("MM_OB_USER", "root@sys"),

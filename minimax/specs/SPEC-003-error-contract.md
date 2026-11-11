@@ -18,7 +18,7 @@ HTTP 400 且响应体形如 `{"error": "<message>"}`。
 
 - `GET /healthz` → `200 {"status": "ok"}`。
 - `GET /items` 的查询参数 `page` / `page_size` / `sort` / `status` / `min_rating`
-  必须 1:1 透传给服务层。
+  必须 1:1 透传给服务层，入口不得自行改写或吞掉参数。
 - 未知路径 → `404 {"error": "not found"}`。
 
 ## 4. 验收标准

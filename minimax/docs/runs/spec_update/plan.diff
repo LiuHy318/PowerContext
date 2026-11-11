@@ -1,0 +1,295 @@
+--- records/spec_update/plan_a.json	2026-10-28 02:31:49.887258951 +0800
++++ records/spec_update/plan_b.json	2026-10-28 02:32:00.700354679 +0800
+@@ -3,7 +3,7 @@
+   "pack_path": "/root/wt/mm/minimax/records/context_pack.json",
+   "pack": {
+     "schema": "ctxsdd/context-pack/v1",
+-    "generated_at": "2026-10-28T02:31:49+0800",
++    "generated_at": "2026-10-28T02:32:00+0800",
+     "task": {
+       "task_id": "TASK-001",
+       "title": "为阅读清单服务新增按状态与最低评分的筛选",
+@@ -54,19 +54,23 @@
+           },
+           {
+             "path": "specs/SPEC-001-list-filter.md",
++            "content_sha": "2cb3f28e61425796807930de460d48fb5e37f6cebbc93cf808e1c723f6a6a468"
++          },
++          {
++            "path": "specs/SPEC-001-list-filter.md",
+             "content_sha": "31d4274a667ec8e1b8a176956de899a095487b3cb0e5fab89e45f8d5656a62bd"
+           },
+           {
+             "path": "specs/SPEC-001-list-filter.md",
+-            "content_sha": "718488a92a42156d9227f6233a277c3ff8a7be014996ef215af1f28aac907cdb"
++            "content_sha": "64ac809f38a62172c1ddc2bc1f4bdb70ca38d061478b9a214fd6135a17e105fd"
+           },
+           {
+             "path": "specs/SPEC-001-list-filter.md",
+-            "content_sha": "dfce31257eaf9691268ddf65d351ac9a4986b7b0bc47f3b3a7f7706c280f24a3"
++            "content_sha": "718488a92a42156d9227f6233a277c3ff8a7be014996ef215af1f28aac907cdb"
+           },
+           {
+             "path": "specs/SPEC-001-list-filter.md",
+-            "content_sha": "e67a151f515e4517e3a9a812b0cd9ed89b39948d5ca186500e8843d6928a65e8"
++            "content_sha": "dfce31257eaf9691268ddf65d351ac9a4986b7b0bc47f3b3a7f7706c280f24a3"
+           },
+           {
+             "path": "specs/SPEC-002-ordering-and-pagination.md",
+@@ -111,25 +115,25 @@
+           {
+             "path": "specs/SPEC-003-error-contract.md",
+             "content_sha": "ffefa615de495ebad4d8dced8f7b283b7b20a50e33645fd9211fa54b666bdcd0"
++          },
++          {
++            "path": "specs/SPEC-004-export-csv.md",
++            "content_sha": "2c9748197634fb0b1bbf20035b078ff8a61cebff69a37f3f45831c91cc7b6eeb"
++          },
++          {
++            "path": "specs/SPEC-004-export-csv.md",
++            "content_sha": "31b5a65df9c6ecbbe4dca0c98fd67ef16392ca9dc0b60bd25fb6eca7360e4870"
++          },
++          {
++            "path": "specs/SPEC-004-export-csv.md",
++            "content_sha": "c328b54787e4e4e0d4546f9c27ae901dbb2c5925c249fab798d25f9d6f2c8fa7"
+           }
+         ],
+-        "digest": "5e76fd887d7dd4187717c6ece09021471881d2753f72aea993bf103dc06175cc",
+-        "count": 17
++        "digest": "b5730941eff8c17d6e9ecda6be935035bb72e6576e4d793e9c27151b9b16f451",
++        "count": 21
+       },
+       "items": [
+         {
+-          "doc_id": "spec:specs/SPEC-001-list-filter.md#2",
+-          "kind": "spec",
+-          "path": "specs/SPEC-001-list-filter.md",
+-          "symbol": "2. 未评分条目的处理",
+-          "heading": "2. 未评分条目的处理",
+-          "line_from": 18,
+-          "line_to": 22,
+-          "content_sha": "718488a92a42156d9227f6233a277c3ff8a7be014996ef215af1f28aac907cdb",
+-          "score": 5.759984,
+-          "content": "[specs/SPEC-001-list-filter.md L18-22] 2. 未评分条目的处理\n## 2. 未评分条目的处理\n\n`rating` 为 `None` 表示未评分。`min_rating` 一旦给出，未评分条目必须被排除，\n不得把 `None` 当作 0 或当作满分参与比较。"
+-        },
+-        {
+           "doc_id": "spec:specs/SPEC-003-error-contract.md#2",
+           "kind": "spec",
+           "path": "specs/SPEC-003-error-contract.md",
+@@ -138,10 +142,22 @@
+           "line_from": 12,
+           "line_to": 16,
+           "content_sha": "36d7320b200b094e07197e2b24635efb73af5f9f6b7427aa41311610eafa0bd7",
+-          "score": 5.369057,
++          "score": 5.360454,
+           "content": "[specs/SPEC-003-error-contract.md L12-16] 2. 错误表达\n## 2. 错误表达\n\n服务层用 `ValueError` 表达参数错误；HTTP 层把 `ValueError` 映射为\nHTTP 400 且响应体形如 `{\"error\": \"<message>\"}`。"
+         },
+         {
++          "doc_id": "spec:specs/SPEC-001-list-filter.md#2",
++          "kind": "spec",
++          "path": "specs/SPEC-001-list-filter.md",
++          "symbol": "2. 未评分条目的处理",
++          "heading": "2. 未评分条目的处理",
++          "line_from": 18,
++          "line_to": 22,
++          "content_sha": "718488a92a42156d9227f6233a277c3ff8a7be014996ef215af1f28aac907cdb",
++          "score": 5.228587,
++          "content": "[specs/SPEC-001-list-filter.md L18-22] 2. 未评分条目的处理\n## 2. 未评分条目的处理\n\n`rating` 为 `None` 表示未评分。`min_rating` 一旦给出，未评分条目必须被排除，\n不得把 `None` 当作 0 或当作满分参与比较。"
++        },
++        {
+           "doc_id": "spec:specs/SPEC-002-ordering-and-pagination.md#3",
+           "kind": "spec",
+           "path": "specs/SPEC-002-ordering-and-pagination.md",
+@@ -150,10 +166,22 @@
+           "line_from": 20,
+           "line_to": 25,
+           "content_sha": "66f78c58754ea3acc9abf7a9df85be8ebeaf714c7c7b9c8f0cef7f44dd6ffe33",
+-          "score": 4.856658,
++          "score": 4.787816,
+           "content": "[specs/SPEC-002-ordering-and-pagination.md L20-25] 3. 分页参数\n## 3. 分页参数\n\n- `page` 为 1 起始的正整数；`page < 1` 或非整数时抛出 `ValueError`。\n- `page_size` 必须在 1..100 之间，越界或非整数时抛出 `ValueError`。\n- 未知的 `sort` 取值抛出 `ValueError`。"
+         },
+         {
++          "doc_id": "spec:specs/SPEC-004-export-csv.md#1",
++          "kind": "spec",
++          "path": "specs/SPEC-004-export-csv.md",
++          "symbol": "1. 能力声明",
++          "heading": "1. 能力声明",
++          "line_from": 7,
++          "line_to": 11,
++          "content_sha": "31b5a65df9c6ecbbe4dca0c98fd67ef16392ca9dc0b60bd25fb6eca7360e4870",
++          "score": 4.60701,
++          "content": "[specs/SPEC-004-export-csv.md L7-11] 1. 能力声明\n## 1. 能力声明\n\n导出（CSV）必须复用 `list_items` 的筛选语义：`status` 与 `min_rating` 的作用范围、\n未评分条目在给出 `min_rating` 时被排除、分页与排序语义均与列表查询一致。"
++        },
++        {
+           "doc_id": "spec:specs/SPEC-001-list-filter.md#4",
+           "kind": "spec",
+           "path": "specs/SPEC-001-list-filter.md",
+@@ -162,32 +190,20 @@
+           "line_from": 29,
+           "line_to": 34,
+           "content_sha": "0ed085bfe789e288cda7cc6d0a353989b70965e7433cc6511dd85f96d8894a8a",
+-          "score": 4.820177,
++          "score": 4.424747,
+           "content": "[specs/SPEC-001-list-filter.md L29-34] 4. 与分页、排序的关系\n## 4. 与分页、排序的关系\n\n筛选先于排序与分页：`total` 与 `total_pages` 必须描述**筛选之后**的全集。\n筛选不得改变 SPEC-002 规定的排序规则、稳定次序与分页边界语义。\n筛选不得修改服务实例的内部状态；连续调用必须彼此独立。"
+         },
+         {
+-          "doc_id": "spec:specs/SPEC-002-ordering-and-pagination.md#4",
+-          "kind": "spec",
+-          "path": "specs/SPEC-002-ordering-and-pagination.md",
+-          "symbol": "4. 分页结果的边界",
+-          "heading": "4. 分页结果的边界",
+-          "line_from": 26,
+-          "line_to": 32,
+-          "content_sha": "69fb4bd8fe8b16354e7da86ca288ed495255aa978cdd24e06e896be6580f5ab8",
+-          "score": 4.03482,
+-          "content": "[specs/SPEC-002-ordering-and-pagination.md L26-32] 4. 分页结果的边界\n## 4. 分页结果的边界\n\n- `total` 是当前结果集（含筛选）的条目总数，与当前页无关。\n- `total_pages = ceil(total / page_size)`；当 `total = 0` 时 `total_pages = 0`。\n- `page` 超出 `total_pages` 时返回空 `items`，但 `total` 与 `total_pages` 保持真实值，\n  不得报错、不得截断 `total`。"
+-        },
+-        {
+-          "doc_id": "spec:specs/SPEC-001-list-filter.md#5",
++          "doc_id": "spec:specs/SPEC-001-list-filter.md#3",
+           "kind": "spec",
+           "path": "specs/SPEC-001-list-filter.md",
+-          "symbol": "5. 验收标准",
+-          "heading": "5. 验收标准",
+-          "line_from": 35,
+-          "line_to": 43,
+-          "content_sha": "e67a151f515e4517e3a9a812b0cd9ed89b39948d5ca186500e8843d6928a65e8",
+-          "score": 4.022155,
+-          "content": "[specs/SPEC-001-list-filter.md L35-43] 5. 验收标准\n## 5. 验收标准\n\n- 以 `business/reading_list/data.py` 的 12 条初始数据为输入：\n  - `status=\"finished\"` → 5 条，顺序为 `r11, r07, r04, r02, r01`；\n  - `min_rating=4` → 6 条，未评分的 `r05 / r06 / r09 / r10` 被排除；\n  - `status=\"finished\", min_rating=4` → 4 条，顺序为 `r11, r04, r02, r01`；\n  - `status=\"to_read\", min_rating=5` → 0 条，`total=0`、`total_pages=0`。\n- `status=\"reading\"` 且 `page_size=2` 时：第 1 页 `r12, r08`，第 2 页 `r05, r03`，\n  两页的 `total` 均为 4。"
++          "symbol": "3. 参数校验",
++          "heading": "3. 参数校验",
++          "line_from": 23,
++          "line_to": 28,
++          "content_sha": "dfce31257eaf9691268ddf65d351ac9a4986b7b0bc47f3b3a7f7706c280f24a3",
++          "score": 3.863131,
++          "content": "[specs/SPEC-001-list-filter.md L23-28] 3. 参数校验\n## 3. 参数校验\n\n- `min_rating` 必须是 1..5 的整数；越界或非整数时抛出 `ValueError`。\n- `status` 必须能解析为 `Status`；非法取值抛出 `ValueError`。\n- 校验失败必须在返回任何结果之前发生，不得返回部分结果。"
+         }
+       ]
+     },
+@@ -202,7 +218,7 @@
+           "line_from": 28,
+           "line_to": 44,
+           "content_sha": "85fa38cf7e38166a0ac4e92b4c4a7bac23734b557846f85962723544319f4a5b",
+-          "score": 4.404057,
++          "score": 4.301553,
+           "source": "retrieval"
+         },
+         {
+@@ -214,7 +230,7 @@
+           "line_from": 90,
+           "line_to": 99,
+           "content_sha": "e01039007f5135c41c20a6c8e1b29ed6b73d685128382ccc3ac6b508bae0172d",
+-          "score": 4.089331,
++          "score": 4.000477,
+           "source": "retrieval"
+         },
+         {
+@@ -226,7 +242,7 @@
+           "line_from": 18,
+           "line_to": 27,
+           "content_sha": "438e0d486b1ffbb1c45dd1b240c0991f51c978437afe89fd866d1ecd57ff0af4",
+-          "score": 4.028494,
++          "score": 3.994706,
+           "source": "retrieval"
+         },
+         {
+@@ -238,7 +254,7 @@
+           "line_from": 18,
+           "line_to": 25,
+           "content_sha": "6a9e5542b4a71329a4b1eae5e2af71853cb95e6bf9af8976b4b88cb13275055c",
+-          "score": 3.959897,
++          "score": 3.933817,
+           "source": "retrieval"
+         },
+         {
+@@ -250,7 +266,7 @@
+           "line_from": 31,
+           "line_to": 38,
+           "content_sha": "3788e663efbfc7dae4d35638b11a95b201448d2c86546c5a1534461e1433d35d",
+-          "score": 3.840163,
++          "score": 3.736196,
+           "source": "retrieval"
+         },
+         {
+@@ -262,7 +278,7 @@
+           "line_from": 39,
+           "line_to": 87,
+           "content_sha": "d04b9d81767b0691f316d3c52a0c72993b3916172e28d8a8bf732612355cd892",
+-          "score": 3.64318,
++          "score": 3.575683,
+           "source": "retrieval"
+         },
+         {
+@@ -274,7 +290,7 @@
+           "line_from": 57,
+           "line_to": 87,
+           "content_sha": "98f547e7cce7cadf286e391427f9a0a9e8ebc63ae1095797e56c80a4f464a95b",
+-          "score": 3.630341,
++          "score": 3.546438,
+           "source": "retrieval"
+         },
+         {
+@@ -309,7 +325,7 @@
+           "line_from": 75,
+           "line_to": 77,
+           "content_sha": "67dcfee8f4b1b1a04849817c5848e441c1752ac0f453a051896649e4781c672a",
+-          "score": 4.288468,
++          "score": 4.284065,
+           "source": "retrieval"
+         },
+         {
+@@ -321,7 +337,7 @@
+           "line_from": 70,
+           "line_to": 72,
+           "content_sha": "8d99d03d9be9403e03e42747e2347630f7f12d445ad2f6249bf64f35dde74a68",
+-          "score": 4.071744,
++          "score": 3.933607,
+           "source": "retrieval"
+         },
+         {
+@@ -333,7 +349,7 @@
+           "line_from": 70,
+           "line_to": 72,
+           "content_sha": "d9cb5e57a25594c7315ae851fd173a6ef3e4420e9638910ce1b9e5b2f9b72a1f",
+-          "score": 3.761216,
++          "score": 3.741973,
+           "source": "retrieval"
+         },
+         {
+@@ -345,7 +361,7 @@
+           "line_from": 93,
+           "line_to": 95,
+           "content_sha": "e0d41dab446531accd71c40a25963a0d118848e168515d53b079cc4cdf08c8b5",
+-          "score": 3.604467,
++          "score": 3.583883,
+           "source": "retrieval"
+         },
+         {
+@@ -369,7 +385,7 @@
+           "line_from": 80,
+           "line_to": 82,
+           "content_sha": "6a4392a88b92164ad8e4d4d169effba82d962949721ed67e0a44ba004f8b981f",
+-          "score": 3.431228,
++          "score": 3.397409,
+           "source": "retrieval"
+         }
+       ]
+@@ -377,15 +393,15 @@
+     "progress": {
+       "source": "PowerContext",
+       "scope_id": "mm-sdd-task-001",
+-      "events": 0,
++      "events": 2,
+       "started": false,
+-      "context_built": false,
++      "context_built": true,
+       "patch_generated": false,
+       "patch_applied": false,
+       "verified": false,
+       "attempts": 0,
+       "last_tests": null
+     },
+-    "context_digest": "3cc38862b56f7cc3d078c40f1d9e03ef073ea87469f2a9f367dd57a71c4bdcdc"
++    "context_digest": "5d5cf8e514fb321342437ce13000de0b5cdd7202b2417ad4b4274d9178d5195b"
+   }
+ }

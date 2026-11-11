@@ -4,11 +4,22 @@
   "goal": "在 ReadingListService.list_items 上实现 status 与 min_rating 两个筛选参数（AND 组合、未评分条目在给出 min_rating 时排除、参数非法抛 ValueError），同时保持既有排序、分页、单条读取与 HTTP 契约不变。",
   "spec_ids": ["SPEC-001", "SPEC-002", "SPEC-003"],
   "query_terms": [
-    "筛选", "min_rating", "status", "未评分", "分页",
-    "排序", "total_pages", "list_items", "reading_list",
-    "ValueError", "get_item", "HTTP"
+    "筛选",
+    "min_rating",
+    "status",
+    "未评分",
+    "分页",
+    "排序",
+    "total_pages",
+    "list_items",
+    "reading_list",
+    "ValueError",
+    "get_item",
+    "HTTP"
   ],
-  "target_files": ["business/reading_list/service.py"],
+  "target_files": [
+    "business/reading_list/service.py"
+  ],
   "supporting_files": [
     "business/reading_list/models.py",
     "business/reading_list/data.py",

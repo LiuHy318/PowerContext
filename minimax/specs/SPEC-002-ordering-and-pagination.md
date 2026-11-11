@@ -27,7 +27,8 @@
 
 - `total` 是当前结果集（含筛选）的条目总数，与当前页无关。
 - `total_pages = ceil(total / page_size)`；当 `total = 0` 时 `total_pages = 0`。
-- `page` 超出 `total_pages` 时返回空 `items`，但 `total` 与 `total_pages` 保持真实值。
+- `page` 超出 `total_pages` 时返回空 `items`，但 `total` 与 `total_pages` 保持真实值，
+  不得报错、不得截断 `total`。
 
 ## 5. 验收标准
 

@@ -1,6 +1,9 @@
-records/
+# 密钥与运行产物不入库
+.venv
+.venv/
 .env
+records/*
+!records/.gitkeep
 __pycache__/
 *.pyc
 .pytest_cache/
-.venv/

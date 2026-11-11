@@ -1,4 +1,4 @@
-"""上下文包：把 OceanBase 检索结果 + 进度组装成开发上下文。"""
+"""上下文包：把 OceanBase 检索结果 + PowerContext 进度组装成开发上下文。"""
 
 from __future__ import annotations
 
@@ -16,17 +16,18 @@ def _digest(text: str) -> str:
 
 
 def spec_fingerprint(store: OceanBaseStore) -> dict[str, Any]:
+    """从数据库读取规格分块的 (path, content_sha)，得到可复算的规格指纹。"""
     rows = store.spec_rows()
-    joined = "\n".join(f"{p}:{s}" for p, s in rows)
+    joined = "\n".join(f"{path}:{sha}" for path, sha in rows)
     return {
-        "chunks": [{"path": p, "content_sha": s} for p, s in rows],
+        "chunks": [{"path": path, "content_sha": sha} for path, sha in rows],
         "digest": _digest(joined),
         "count": len(rows),
     }
 
 
 def _group(hits: Sequence[Hit], *, with_content: bool = False) -> list[dict[str, Any]]:
-    return [h.locator(with_content=with_content) for h in hits]
+    return [hit.locator(with_content=with_content) for hit in hits]
 
 
 def build_context_pack(
@@ -36,20 +37,25 @@ def build_context_pack(
     *,
     progress: dict[str, Any],
 ) -> dict[str, Any]:
-    terms = [str(t) for t in task.get("query_terms", [])]
+    """构造上下文包。规格条目全部来自检索结果；代码/测试另合并任务声明的锚点。"""
+    terms = [str(term) for term in task.get("query_terms", [])]
     spec_hits = store.search(terms, kinds=["spec"], limit=6)
     code_hits = store.search(terms, kinds=["code"], limit=8)
     test_hits = store.search(terms, kinds=["test"], limit=6)
 
+    anchors = {
+        "code": set(task.get("target_files", [])),
+        "test": set(task.get("target_tests", [])) | set(task.get("regression_tests", [])),
+    }
     code_items = _group(code_hits)
     test_items = _group(test_hits)
 
-    covered_code = {i["path"] for i in code_items}
-    for path in sorted(set(task.get("target_files", [])) - covered_code):
+    # 检索未覆盖到的任务锚点补进来，并显式标注来源，避免把锚点误当成检索结果。
+    covered_code = {item["path"] for item in code_items}
+    for path in sorted(anchors["code"] - covered_code):
         code_items.append({"path": path, "kind": "code", "symbol": "", "source": "task-anchor"})
-    covered_test = {i["path"] for i in test_items}
-    test_anchors = set(task.get("target_tests", [])) | set(task.get("regression_tests", []))
-    for path in sorted(test_anchors - covered_test):
+    covered_test = {item["path"] for item in test_items}
+    for path in sorted(anchors["test"] - covered_test):
         test_items.append({"path": path, "kind": "test", "symbol": "", "source": "task-anchor"})
 
     for item in code_items:
@@ -57,6 +63,7 @@ def build_context_pack(
     for item in test_items:
         item.setdefault("source", "retrieval")
 
+    fingerprint = spec_fingerprint(store)
     pack = {
         "schema": "ctxsdd/context-pack/v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -71,10 +78,11 @@ def build_context_pack(
             "database": config.ob_database,
             "table": "mm_doc",
             "terms": terms,
+            "query_log": "records/ob_query_log.jsonl",
         },
         "specs": {
             "spec_ids": task.get("spec_ids", []),
-            "fingerprint": spec_fingerprint(store),
+            "fingerprint": fingerprint,
             "items": _group(spec_hits, with_content=True),
         },
         "code": {"items": code_items},
@@ -87,11 +95,13 @@ def build_context_pack(
             "source": "PowerContext",
             "scope_id": config.pc_scope_id,
             "events": len(progress.get("history", [])),
+            "started": progress.get("started", False),
             "context_built": progress.get("context_built", False),
             "patch_generated": progress.get("patch_generated", False),
             "patch_applied": progress.get("patch_applied", False),
             "verified": progress.get("verified", False),
             "attempts": progress.get("attempts", 0),
+            "last_tests": progress.get("last_tests"),
         },
     }
     pack["context_digest"] = _digest(json.dumps(pack, ensure_ascii=False, sort_keys=True))

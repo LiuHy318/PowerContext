@@ -1,4 +1,7 @@
-"""列表查询服务：排序、分页与筛选（SPEC-001 已实现）。"""
+"""列表查询服务：排序、分页，以及（待实现的）筛选。
+
+本文件是 TASK-001 的**局部修改目标**。基线状态见 ``minimax/docs/snapshots/before/``。
+"""
 
 from __future__ import annotations
 
@@ -13,6 +16,7 @@ SORT_MODES = (DEFAULT_SORT, "added_at_asc", "title_asc")
 
 
 def _validate_page(page: int, page_size: int, sort: str) -> None:
+    """分页与排序参数的入参校验（SPEC-002 固定行为，不得放宽）。"""
     if not isinstance(page, int) or isinstance(page, bool) or page < 1:
         raise ValueError("page must be an integer >= 1")
     if not isinstance(page_size, int) or isinstance(page_size, bool):
@@ -23,29 +27,8 @@ def _validate_page(page: int, page_size: int, sort: str) -> None:
         raise ValueError(f"sort must be one of {SORT_MODES}")
 
 
-def _resolve_status(status: Status | str | None) -> Status | None:
-    if status is None:
-        return None
-    if isinstance(status, Status):
-        return status
-    if isinstance(status, str):
-        try:
-            return Status(status)
-        except ValueError:
-            raise ValueError(f"invalid status: {status!r}") from None
-    raise ValueError(f"status must be Status or str, got {type(status).__name__}")
-
-
-def _validate_min_rating(min_rating: int | None) -> None:
-    if min_rating is None:
-        return
-    if not isinstance(min_rating, int) or isinstance(min_rating, bool):
-        raise ValueError("min_rating must be an integer")
-    if min_rating < 1 or min_rating > 5:
-        raise ValueError(f"min_rating must be within 1..5, got {min_rating}")
-
-
 def _sort_key(sort: str):
+    """排序键：主键相同时以 ``id`` 升序作为稳定次序（SPEC-002）。"""
     if sort == "added_at_asc":
         return lambda item: (item.added_at, item.id)
     if sort == "title_asc":
@@ -61,9 +44,11 @@ class ReadingListService:
 
     @property
     def items(self) -> tuple[ReadingItem, ...]:
+        """全量条目（未排序、未分页），供调试与测试使用。"""
         return self._items
 
     def get_item(self, item_id: str) -> ReadingItem | None:
+        """按 id 取单条；不存在返回 ``None``（SPEC-003）。"""
         for item in self._items:
             if item.id == item_id:
                 return item
@@ -78,26 +63,27 @@ class ReadingListService:
         page_size: int = DEFAULT_PAGE_SIZE,
         sort: str = DEFAULT_SORT,
     ) -> Page:
+        """返回一页阅读条目。
+
+        ``status`` 与 ``min_rating`` 的筛选语义见 SPEC-001；``sort`` / ``page`` /
+        ``page_size`` 的语义见 SPEC-002。
+        """
         _validate_page(page, page_size, sort)
-        resolved_status = _resolve_status(status)
-        _validate_min_rating(min_rating)
 
+        # TODO(SPEC-001): status / min_rating 过滤尚未实现，参数暂时被忽略。
         selected: list[ReadingItem] = list(self._items)
-
-        if resolved_status is not None:
-            selected = [item for item in selected if item.status == resolved_status]
-
-        if min_rating is not None:
-            selected = [item for item in selected if item.rating is not None and item.rating >= min_rating]
 
         ordered = sorted(selected, key=_sort_key(sort))
         total = len(ordered)
         total_pages = (total + page_size - 1) // page_size
         start = (page - 1) * page_size
-        window = ordered[start:start + page_size]
+        window = ordered[start : start + page_size]
         return Page(
-            items=window, page=page, page_size=page_size,
-            total=total, total_pages=total_pages,
+            items=window,
+            page=page,
+            page_size=page_size,
+            total=total,
+            total_pages=total_pages,
         )
 
 
@@ -107,6 +93,7 @@ def list_all_items(
     status: Status | str | None = None,
     min_rating: int | None = None,
 ) -> list[ReadingItem]:
+    """便捷包装：返回全量（不分页）结果，语义与 ``list_items`` 一致。"""
     service = ReadingListService(items)
     page = service.list_items(status=status, min_rating=min_rating, page=1, page_size=MAX_PAGE_SIZE)
     return list(page.items)

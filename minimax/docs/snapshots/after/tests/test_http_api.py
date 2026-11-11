@@ -1,4 +1,7 @@
-"""回归测试：HTTP 入口（SPEC-003）。"""
+"""回归测试：HTTP 入口（SPEC-003）。
+
+只覆盖基线已存在的行为，筛选参数由 test_filter_feature.py 覆盖。
+"""
 
 from __future__ import annotations
 
@@ -30,7 +33,7 @@ def _get(url: str) -> tuple[int, dict]:
     try:
         with urllib.request.urlopen(url, timeout=5) as response:
             return response.status, json.loads(response.read().decode("utf-8"))
-    except urllib.error.HTTPError as error:
+    except urllib.error.HTTPError as error:  # 4xx 也需要读取 JSON 体
         return error.code, json.loads(error.read().decode("utf-8"))
 
 

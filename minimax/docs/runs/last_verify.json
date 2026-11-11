@@ -3,19 +3,25 @@
   "ok": true,
   "target": {
     "name": "target",
+    "command": "/root/wt/mm/minimax/.venv/bin/python -m pytest -q business/tests/test_filter_feature.py",
     "exit_code": 0,
     "passed": 14,
     "failed": 0,
     "errors": 0,
-    "summary": "14 passed in 0.32s"
+    "duration_s": 0.61,
+    "summary": "14 passed in 0.17s",
+    "ok": true
   },
   "regression": {
     "name": "regression",
+    "command": "/root/wt/mm/minimax/.venv/bin/python -m pytest -q business/tests/test_regression_baseline.py business/tests/test_http_api.py",
     "exit_code": 0,
     "passed": 20,
     "failed": 0,
     "errors": 0,
-    "summary": "20 passed in 0.45s"
+    "duration_s": 1.1,
+    "summary": "20 passed in 0.68s",
+    "ok": true
   },
-  "fallback_used": false
+  "git_revision": "d3b01b15"
 }

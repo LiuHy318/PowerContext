@@ -1,0 +1,407 @@
+{
+  "stage": "plan",
+  "pack_path": "/root/wt/mm/minimax/records/context_pack.json",
+  "pack": {
+    "schema": "ctxsdd/context-pack/v1",
+    "generated_at": "2026-10-28T02:32:00+0800",
+    "task": {
+      "task_id": "TASK-001",
+      "title": "为阅读清单服务新增按状态与最低评分的筛选",
+      "goal": "在 ReadingListService.list_items 上实现 status 与 min_rating 两个筛选参数（AND 组合、未评分条目在给出 min_rating 时排除、参数非法抛 ValueError），同时保持既有排序、分页、单条读取与 HTTP 契约不变。",
+      "must_preserve": [
+        "三种 sort 模式与 id 升序的稳定次序",
+        "page/page_size 校验与越界分页语义",
+        "total/total_pages 描述筛选后的全集",
+        "get_item 缺失返回 None",
+        "HTTP 400/404 错误体形状"
+      ]
+    },
+    "retrieval": {
+      "engine": "OceanBase/seekdb",
+      "database": "mm_sdd",
+      "table": "mm_doc",
+      "terms": [
+        "筛选",
+        "min_rating",
+        "status",
+        "未评分",
+        "分页",
+        "排序",
+        "total_pages",
+        "list_items",
+        "reading_list",
+        "ValueError",
+        "get_item",
+        "HTTP"
+      ],
+      "query_log": "records/ob_query_log.jsonl"
+    },
+    "specs": {
+      "spec_ids": [
+        "SPEC-001",
+        "SPEC-002",
+        "SPEC-003"
+      ],
+      "fingerprint": {
+        "chunks": [
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "0ed085bfe789e288cda7cc6d0a353989b70965e7433cc6511dd85f96d8894a8a"
+          },
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "1e594f5b372a5a2cd7f4b93928e6453ccab8433d9f48246f4fb68fd5b0f9f71e"
+          },
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "2cb3f28e61425796807930de460d48fb5e37f6cebbc93cf808e1c723f6a6a468"
+          },
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "31d4274a667ec8e1b8a176956de899a095487b3cb0e5fab89e45f8d5656a62bd"
+          },
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "64ac809f38a62172c1ddc2bc1f4bdb70ca38d061478b9a214fd6135a17e105fd"
+          },
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "718488a92a42156d9227f6233a277c3ff8a7be014996ef215af1f28aac907cdb"
+          },
+          {
+            "path": "specs/SPEC-001-list-filter.md",
+            "content_sha": "dfce31257eaf9691268ddf65d351ac9a4986b7b0bc47f3b3a7f7706c280f24a3"
+          },
+          {
+            "path": "specs/SPEC-002-ordering-and-pagination.md",
+            "content_sha": "35028d9c0050db3c74890f2fd3770b3cab23a351fdd54c5830f0c2c5681388fb"
+          },
+          {
+            "path": "specs/SPEC-002-ordering-and-pagination.md",
+            "content_sha": "5074f67aecc82f518ade01be8e45c69d6a1ce6830358c2d056dd2818b35feb84"
+          },
+          {
+            "path": "specs/SPEC-002-ordering-and-pagination.md",
+            "content_sha": "66f78c58754ea3acc9abf7a9df85be8ebeaf714c7c7b9c8f0cef7f44dd6ffe33"
+          },
+          {
+            "path": "specs/SPEC-002-ordering-and-pagination.md",
+            "content_sha": "69fb4bd8fe8b16354e7da86ca288ed495255aa978cdd24e06e896be6580f5ab8"
+          },
+          {
+            "path": "specs/SPEC-002-ordering-and-pagination.md",
+            "content_sha": "989c09e4eb775f824eff53e013c6556370e941f2df748a9bb4e85b245d86a3e0"
+          },
+          {
+            "path": "specs/SPEC-002-ordering-and-pagination.md",
+            "content_sha": "fcbb8a1e7d7388cae81afb1b73ae71241d2aee1bfd451a8183c6005ba4e0e3fa"
+          },
+          {
+            "path": "specs/SPEC-003-error-contract.md",
+            "content_sha": "166684083e389bff485d35ea49e9ea6acdf9de966db3c7c932e059c04c7c5a4e"
+          },
+          {
+            "path": "specs/SPEC-003-error-contract.md",
+            "content_sha": "36d7320b200b094e07197e2b24635efb73af5f9f6b7427aa41311610eafa0bd7"
+          },
+          {
+            "path": "specs/SPEC-003-error-contract.md",
+            "content_sha": "ac62686905db3666d60fae840124e10c9232d93a8976032b52afc30c4c94a7e0"
+          },
+          {
+            "path": "specs/SPEC-003-error-contract.md",
+            "content_sha": "dbf7ed87eca6319c7f2767352ba5957309ee59e0d5b7a70303258de91ae05c59"
+          },
+          {
+            "path": "specs/SPEC-003-error-contract.md",
+            "content_sha": "ffefa615de495ebad4d8dced8f7b283b7b20a50e33645fd9211fa54b666bdcd0"
+          },
+          {
+            "path": "specs/SPEC-004-export-csv.md",
+            "content_sha": "2c9748197634fb0b1bbf20035b078ff8a61cebff69a37f3f45831c91cc7b6eeb"
+          },
+          {
+            "path": "specs/SPEC-004-export-csv.md",
+            "content_sha": "31b5a65df9c6ecbbe4dca0c98fd67ef16392ca9dc0b60bd25fb6eca7360e4870"
+          },
+          {
+            "path": "specs/SPEC-004-export-csv.md",
+            "content_sha": "c328b54787e4e4e0d4546f9c27ae901dbb2c5925c249fab798d25f9d6f2c8fa7"
+          }
+        ],
+        "digest": "b5730941eff8c17d6e9ecda6be935035bb72e6576e4d793e9c27151b9b16f451",
+        "count": 21
+      },
+      "items": [
+        {
+          "doc_id": "spec:specs/SPEC-003-error-contract.md#2",
+          "kind": "spec",
+          "path": "specs/SPEC-003-error-contract.md",
+          "symbol": "2. 错误表达",
+          "heading": "2. 错误表达",
+          "line_from": 12,
+          "line_to": 16,
+          "content_sha": "36d7320b200b094e07197e2b24635efb73af5f9f6b7427aa41311610eafa0bd7",
+          "score": 5.360454,
+          "content": "[specs/SPEC-003-error-contract.md L12-16] 2. 错误表达\n## 2. 错误表达\n\n服务层用 `ValueError` 表达参数错误；HTTP 层把 `ValueError` 映射为\nHTTP 400 且响应体形如 `{\"error\": \"<message>\"}`。"
+        },
+        {
+          "doc_id": "spec:specs/SPEC-001-list-filter.md#2",
+          "kind": "spec",
+          "path": "specs/SPEC-001-list-filter.md",
+          "symbol": "2. 未评分条目的处理",
+          "heading": "2. 未评分条目的处理",
+          "line_from": 18,
+          "line_to": 22,
+          "content_sha": "718488a92a42156d9227f6233a277c3ff8a7be014996ef215af1f28aac907cdb",
+          "score": 5.228587,
+          "content": "[specs/SPEC-001-list-filter.md L18-22] 2. 未评分条目的处理\n## 2. 未评分条目的处理\n\n`rating` 为 `None` 表示未评分。`min_rating` 一旦给出，未评分条目必须被排除，\n不得把 `None` 当作 0 或当作满分参与比较。"
+        },
+        {
+          "doc_id": "spec:specs/SPEC-002-ordering-and-pagination.md#3",
+          "kind": "spec",
+          "path": "specs/SPEC-002-ordering-and-pagination.md",
+          "symbol": "3. 分页参数",
+          "heading": "3. 分页参数",
+          "line_from": 20,
+          "line_to": 25,
+          "content_sha": "66f78c58754ea3acc9abf7a9df85be8ebeaf714c7c7b9c8f0cef7f44dd6ffe33",
+          "score": 4.787816,
+          "content": "[specs/SPEC-002-ordering-and-pagination.md L20-25] 3. 分页参数\n## 3. 分页参数\n\n- `page` 为 1 起始的正整数；`page < 1` 或非整数时抛出 `ValueError`。\n- `page_size` 必须在 1..100 之间，越界或非整数时抛出 `ValueError`。\n- 未知的 `sort` 取值抛出 `ValueError`。"
+        },
+        {
+          "doc_id": "spec:specs/SPEC-004-export-csv.md#1",
+          "kind": "spec",
+          "path": "specs/SPEC-004-export-csv.md",
+          "symbol": "1. 能力声明",
+          "heading": "1. 能力声明",
+          "line_from": 7,
+          "line_to": 11,
+          "content_sha": "31b5a65df9c6ecbbe4dca0c98fd67ef16392ca9dc0b60bd25fb6eca7360e4870",
+          "score": 4.60701,
+          "content": "[specs/SPEC-004-export-csv.md L7-11] 1. 能力声明\n## 1. 能力声明\n\n导出（CSV）必须复用 `list_items` 的筛选语义：`status` 与 `min_rating` 的作用范围、\n未评分条目在给出 `min_rating` 时被排除、分页与排序语义均与列表查询一致。"
+        },
+        {
+          "doc_id": "spec:specs/SPEC-001-list-filter.md#4",
+          "kind": "spec",
+          "path": "specs/SPEC-001-list-filter.md",
+          "symbol": "4. 与分页、排序的关系",
+          "heading": "4. 与分页、排序的关系",
+          "line_from": 29,
+          "line_to": 34,
+          "content_sha": "0ed085bfe789e288cda7cc6d0a353989b70965e7433cc6511dd85f96d8894a8a",
+          "score": 4.424747,
+          "content": "[specs/SPEC-001-list-filter.md L29-34] 4. 与分页、排序的关系\n## 4. 与分页、排序的关系\n\n筛选先于排序与分页：`total` 与 `total_pages` 必须描述**筛选之后**的全集。\n筛选不得改变 SPEC-002 规定的排序规则、稳定次序与分页边界语义。\n筛选不得修改服务实例的内部状态；连续调用必须彼此独立。"
+        },
+        {
+          "doc_id": "spec:specs/SPEC-001-list-filter.md#3",
+          "kind": "spec",
+          "path": "specs/SPEC-001-list-filter.md",
+          "symbol": "3. 参数校验",
+          "heading": "3. 参数校验",
+          "line_from": 23,
+          "line_to": 28,
+          "content_sha": "dfce31257eaf9691268ddf65d351ac9a4986b7b0bc47f3b3a7f7706c280f24a3",
+          "score": 3.863131,
+          "content": "[specs/SPEC-001-list-filter.md L23-28] 3. 参数校验\n## 3. 参数校验\n\n- `min_rating` 必须是 1..5 的整数；越界或非整数时抛出 `ValueError`。\n- `status` 必须能解析为 `Status`；非法取值抛出 `ValueError`。\n- 校验失败必须在返回任何结果之前发生，不得返回部分结果。"
+        }
+      ]
+    },
+    "code": {
+      "items": [
+        {
+          "doc_id": "code:business/reading_list/http_api.py#handle_items",
+          "kind": "code",
+          "path": "business/reading_list/http_api.py",
+          "symbol": "handle_items",
+          "heading": "handle_items",
+          "line_from": 28,
+          "line_to": 44,
+          "content_sha": "85fa38cf7e38166a0ac4e92b4c4a7bac23734b557846f85962723544319f4a5b",
+          "score": 4.301553,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/service.py#list_all_items",
+          "kind": "code",
+          "path": "business/reading_list/service.py",
+          "symbol": "list_all_items",
+          "heading": "list_all_items",
+          "line_from": 90,
+          "line_to": 99,
+          "content_sha": "e01039007f5135c41c20a6c8e1b29ed6b73d685128382ccc3ac6b508bae0172d",
+          "score": 4.000477,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/service.py#_validate_page",
+          "kind": "code",
+          "path": "business/reading_list/service.py",
+          "symbol": "_validate_page",
+          "heading": "_validate_page",
+          "line_from": 18,
+          "line_to": 27,
+          "content_sha": "438e0d486b1ffbb1c45dd1b240c0991f51c978437afe89fd866d1ecd57ff0af4",
+          "score": 3.994706,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/http_api.py#_int_param",
+          "kind": "code",
+          "path": "business/reading_list/http_api.py",
+          "symbol": "_int_param",
+          "heading": "_int_param",
+          "line_from": 18,
+          "line_to": 25,
+          "content_sha": "6a9e5542b4a71329a4b1eae5e2af71853cb95e6bf9af8976b4b88cb13275055c",
+          "score": 3.933817,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/models.py#Page",
+          "kind": "code",
+          "path": "business/reading_list/models.py",
+          "symbol": "Page",
+          "heading": "Page",
+          "line_from": 31,
+          "line_to": 38,
+          "content_sha": "3788e663efbfc7dae4d35638b11a95b201448d2c86546c5a1534461e1433d35d",
+          "score": 3.736196,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/service.py#ReadingListService",
+          "kind": "code",
+          "path": "business/reading_list/service.py",
+          "symbol": "ReadingListService",
+          "heading": "ReadingListService",
+          "line_from": 39,
+          "line_to": 87,
+          "content_sha": "d04b9d81767b0691f316d3c52a0c72993b3916172e28d8a8bf732612355cd892",
+          "score": 3.575683,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/service.py#ReadingListService.list_items",
+          "kind": "code",
+          "path": "business/reading_list/service.py",
+          "symbol": "ReadingListService.list_items",
+          "heading": "list_items",
+          "line_from": 57,
+          "line_to": 87,
+          "content_sha": "98f547e7cce7cadf286e391427f9a0a9e8ebc63ae1095797e56c80a4f464a95b",
+          "score": 3.546438,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "code:business/reading_list/http_api.py#serve",
+          "kind": "code",
+          "path": "business/reading_list/http_api.py",
+          "symbol": "serve",
+          "heading": "serve",
+          "line_from": 76,
+          "line_to": 77,
+          "content_sha": "c7241a0a4a99520b1ea1ddf0b5e2eeaae81d3f043ede32fd53e7d2f906d3bd43",
+          "score": 3.452168,
+          "source": "retrieval"
+        }
+      ]
+    },
+    "tests": {
+      "target": [
+        "business/tests/test_filter_feature.py"
+      ],
+      "regression": [
+        "business/tests/test_regression_baseline.py",
+        "business/tests/test_http_api.py"
+      ],
+      "items": [
+        {
+          "doc_id": "test:business/tests/test_filter_feature.py#test_invalid_status_value_rejected",
+          "kind": "test",
+          "path": "business/tests/test_filter_feature.py",
+          "symbol": "test_invalid_status_value_rejected",
+          "heading": "test_invalid_status_value_rejected",
+          "line_from": 75,
+          "line_to": 77,
+          "content_sha": "67dcfee8f4b1b1a04849817c5848e441c1752ac0f453a051896649e4781c672a",
+          "score": 4.284065,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "test:business/tests/test_filter_feature.py#test_min_rating_out_of_range_rejected",
+          "kind": "test",
+          "path": "business/tests/test_filter_feature.py",
+          "symbol": "test_min_rating_out_of_range_rejected",
+          "heading": "test_min_rating_out_of_range_rejected",
+          "line_from": 70,
+          "line_to": 72,
+          "content_sha": "8d99d03d9be9403e03e42747e2347630f7f12d445ad2f6249bf64f35dde74a68",
+          "score": 3.933607,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "test:business/tests/test_regression_baseline.py#test_invalid_page_rejected",
+          "kind": "test",
+          "path": "business/tests/test_regression_baseline.py",
+          "symbol": "test_invalid_page_rejected",
+          "heading": "test_invalid_page_rejected",
+          "line_from": 70,
+          "line_to": 72,
+          "content_sha": "d9cb5e57a25594c7315ae851fd173a6ef3e4420e9638910ce1b9e5b2f9b72a1f",
+          "score": 3.741973,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "test:business/tests/test_regression_baseline.py#test_status_enum_values_are_stable",
+          "kind": "test",
+          "path": "business/tests/test_regression_baseline.py",
+          "symbol": "test_status_enum_values_are_stable",
+          "heading": "test_status_enum_values_are_stable",
+          "line_from": 93,
+          "line_to": 95,
+          "content_sha": "e0d41dab446531accd71c40a25963a0d118848e168515d53b079cc4cdf08c8b5",
+          "score": 3.583883,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "test:business/tests/test_http_api.py#test_items_invalid_page_returns_400",
+          "kind": "test",
+          "path": "business/tests/test_http_api.py",
+          "symbol": "test_items_invalid_page_returns_400",
+          "heading": "test_items_invalid_page_returns_400",
+          "line_from": 61,
+          "line_to": 64,
+          "content_sha": "77acfb5534efe83bf9f3ca5b3f0ac3bdb5a580bf5cc50c98b93bcb30e5f568b8",
+          "score": 3.458866,
+          "source": "retrieval"
+        },
+        {
+          "doc_id": "test:business/tests/test_filter_feature.py#test_list_all_items_supports_filtering",
+          "kind": "test",
+          "path": "business/tests/test_filter_feature.py",
+          "symbol": "test_list_all_items_supports_filtering",
+          "heading": "test_list_all_items_supports_filtering",
+          "line_from": 80,
+          "line_to": 82,
+          "content_sha": "6a4392a88b92164ad8e4d4d169effba82d962949721ed67e0a44ba004f8b981f",
+          "score": 3.397409,
+          "source": "retrieval"
+        }
+      ]
+    },
+    "progress": {
+      "source": "PowerContext",
+      "scope_id": "mm-sdd-task-001",
+      "events": 2,
+      "started": false,
+      "context_built": true,
+      "patch_generated": false,
+      "patch_applied": false,
+      "verified": false,
+      "attempts": 0,
+      "last_tests": null
+    },
+    "context_digest": "5d5cf8e514fb321342437ce13000de0b5cdd7202b2417ad4b4274d9178d5195b"
+  }
+}

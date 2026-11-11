@@ -1,4 +1,7 @@
-"""回归测试：SPEC-002（排序/分页）与 SPEC-003（错误与单条读取）。"""
+"""回归测试：SPEC-002（排序 / 分页）与 SPEC-003（错误与单条读取）。
+
+这些行为在 TASK-001 之前就存在，修改后必须完全保持不变。
+"""
 
 from __future__ import annotations
 
@@ -28,6 +31,7 @@ def test_title_asc_sort_is_stable_on_ties(service: ReadingListService) -> None:
     page = service.list_items(page_size=12, sort="title_asc")
     titles = [item.title for item in page.items]
     assert titles == sorted(titles)
+    # Martin Fowler 有两本书，同作者不同书名，顺序按 title 而不是 id
     fowler = [item.id for item in page.items if item.author == "Martin Fowler"]
     assert fowler == ["r09", "r05"]
 

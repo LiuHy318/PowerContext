@@ -13,7 +13,7 @@
   （`to_read` / `reading` / `finished`）。
 - `min_rating`：按最低评分筛选，只保留 `rating >= min_rating` 的条目。
 
-两个参数同时给出时按逻辑与（AND）组合：条目必须同时满足状态与评分条件。
+两个参数同时给出时按逻辑与（AND）组合：条目必须**同时**满足状态与评分条件。
 
 ## 2. 未评分条目的处理
 
@@ -28,13 +28,16 @@
 
 ## 4. 与分页、排序的关系
 
-筛选先于排序与分页：`total` 与 `total_pages` 必须描述筛选之后的全集。
+筛选先于排序与分页：`total` 与 `total_pages` 必须描述**筛选之后**的全集。
 筛选不得改变 SPEC-002 规定的排序规则、稳定次序与分页边界语义。
 筛选不得修改服务实例的内部状态；连续调用必须彼此独立。
 
 ## 5. 验收标准
 
-- `status="finished"` → 5 条，顺序为 `r11, r07, r04, r02, r01`；
-- `min_rating=4` → 6 条，未评分的 `r05 / r06 / r09 / r10` 被排除；
-- `status="finished", min_rating=4` → 4 条，顺序为 `r11, r04, r02, r01`；
-- `status="to_read", min_rating=5` → 0 条，`total=0`、`total_pages=0`。
+- 以 `business/reading_list/data.py` 的 12 条初始数据为输入：
+  - `status="finished"` → 5 条，顺序为 `r11, r07, r04, r02, r01`；
+  - `min_rating=4` → 6 条，未评分的 `r05 / r06 / r09 / r10` 被排除；
+  - `status="finished", min_rating=4` → 4 条，顺序为 `r11, r04, r02, r01`；
+  - `status="to_read", min_rating=5` → 0 条，`total=0`、`total_pages=0`。
+- `status="reading"` 且 `page_size=2` 时：第 1 页 `r12, r08`，第 2 页 `r05, r03`，
+  两页的 `total` 均为 4。

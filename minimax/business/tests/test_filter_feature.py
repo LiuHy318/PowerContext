@@ -1,4 +1,7 @@
-"""目标功能测试：TASK-001（SPEC-001 按状态 + 最低评分筛选）。"""
+"""目标功能测试：TASK-001（SPEC-001 按状态 + 最低评分筛选）。
+
+基线（未实现筛选时）**全部失败**；应用补丁后必须全部通过。
+"""
 
 from __future__ import annotations
 
@@ -55,6 +58,7 @@ def test_filter_keeps_ordering_and_pagination(service: ReadingListService) -> No
     assert [item.id for item in second.items] == ["r05", "r03"]
     assert first.total == 4
     assert first.total_pages == 2
+    assert second.total == 4
 
 
 def test_filter_respects_ascending_sort(service: ReadingListService) -> None:

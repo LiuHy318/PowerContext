@@ -1,0 +1,30 @@
+--- a/business/reading_list/service.py
++++ b/business/reading_list/service.py
+@@ -71,6 +71,25 @@ class ReadingListService:
+         _validate_page(page, page_size, sort)
+ 
+-        # TODO(SPEC-001): status / min_rating 过滤尚未实现，参数暂时被忽略。
+-        selected: list[ReadingItem] = list(self._items)
++        if status is not None:
++            try:
++                status = Status(status)
++            except (TypeError, ValueError) as exc:
++                valid_statuses = tuple(item.value for item in Status)
++                raise ValueError(f"status must be one of {valid_statuses}") from exc
++        if min_rating is not None:
++            if not isinstance(min_rating, int) or isinstance(min_rating, bool):
++                raise ValueError("min_rating must be an integer")
++            if min_rating < 1 or min_rating > 5:
++                raise ValueError("min_rating must be within 1..5")
++
++        selected: list[ReadingItem] = []
++        for item in self._items:
++            if status is not None and item.status != status:
++                continue
++            if min_rating is not None and (
++                item.rating is None or item.rating < min_rating
++            ):
++                continue
++            selected.append(item)
+ 
+         ordered = sorted(selected, key=_sort_key(sort))

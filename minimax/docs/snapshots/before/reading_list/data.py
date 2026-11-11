@@ -1,4 +1,4 @@
-"""初始数据：12 条确定性阅读记录。"""
+"""初始数据：确定性的 12 条阅读记录（验证样例要求的「初始数据」）。"""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from reading_list.models import ReadingItem, Status
 _BASE = datetime(2026, 1, 1, 8, 0, 0, tzinfo=timezone.utc)
 
 _RAW = [
+    # id, title, author, status, rating, added_at_offset_days, tags
     ("r01", "Clean Architecture", "Robert C. Martin", Status.FINISHED, 5, 0, ["design"]),
     ("r02", "Designing Data-Intensive Applications", "Martin Kleppmann", Status.FINISHED, 5, 1, ["distributed"]),
     ("r03", "Working Effectively with Legacy Code", "Michael Feathers", Status.READING, 4, 2, ["refactor"]),
@@ -25,15 +26,24 @@ _RAW = [
 
 
 def seed_items() -> list[ReadingItem]:
+    """返回全新的 12 条记录（每次调用都是新对象，测试之间互不污染）。"""
     items: list[ReadingItem] = []
     for item_id, title, author, status, rating, offset_days, tags in _RAW:
-        items.append(ReadingItem(
-            id=item_id, title=title, author=author, status=status,
-            rating=rating, added_at=_BASE.replace(day=1 + offset_days), tags=list(tags),
-        ))
+        items.append(
+            ReadingItem(
+                id=item_id,
+                title=title,
+                author=author,
+                status=status,
+                rating=rating,
+                added_at=_BASE.replace(day=1 + offset_days),
+                tags=list(tags),
+            )
+        )
     return items
 
 
-def default_service():
+def default_service() -> "ReadingListService":  # noqa: F821 - 延迟导入避免循环
     from reading_list.service import ReadingListService
+
     return ReadingListService(seed_items())

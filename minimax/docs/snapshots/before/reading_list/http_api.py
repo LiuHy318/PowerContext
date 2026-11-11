@@ -1,4 +1,7 @@
-"""最小 HTTP 入口：GET /items 与 GET /healthz。"""
+"""最小 HTTP 入口：``GET /items`` 与 ``GET /healthz``。
+
+用于证明业务工程「能跑」；查询参数到服务层是 1:1 透传（SPEC-003）。
+"""
 
 from __future__ import annotations
 
@@ -18,11 +21,12 @@ def _int_param(params: dict[str, list[str]], name: str, default: int) -> int:
         return default
     try:
         return int(raw)
-    except ValueError as exc:
+    except ValueError as exc:  # 交由服务层统一报错
         raise ValueError(f"{name} must be an integer") from exc
 
 
 def handle_items(query: str) -> tuple[int, dict]:
+    """把查询串映射为服务调用，返回 (HTTP 状态码, JSON 体)。"""
     params = parse_qs(query, keep_blank_values=True)
     status = params.get("status", [None])[0] or None
     min_rating_raw = params.get("min_rating", [None])[0] or None
@@ -43,7 +47,7 @@ def handle_items(query: str) -> tuple[int, dict]:
 class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def do_GET(self) -> None:
+    def do_GET(self) -> None:  # noqa: N802 - http.server 约定
         parsed = urlparse(self.path)
         if parsed.path == "/healthz":
             self._send(200, {"status": "ok"})
@@ -65,7 +69,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def log_message(self, fmt: str, *args: object) -> None:
+    def log_message(self, fmt: str, *args: object) -> None:  # 静音访问日志
         return
 
 
@@ -73,13 +77,14 @@ def serve(port: int = 8765) -> ThreadingHTTPServer:
     return ThreadingHTTPServer(("127.0.0.1", port), _Handler)
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover - 手工演示入口
     import sys
+
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
     server = serve(port)
     print(f"reading-list service listening on http://127.0.0.1:{port}")
     server.serve_forever()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
